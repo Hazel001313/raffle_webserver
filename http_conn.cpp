@@ -16,14 +16,9 @@ const char *error_404_title = "Not Found";
 const char *error_404_form = "The requested file was not found on this server.\n";
 const char *error_500_title = "Internal Error";
 const char *error_500_form = "There was an unusual problem serving the requested file.\n";
-const char *ok_win_form = "Congratulation! You've got the ticket!";
-const char *ok_lose_form = "Sorry... But you can watch on line!\n";
-const char *invalid_staff_id = "Invalid id\n";
-const char *finish_raffle = "Finish!\n";
+
 
 router *http_conn::m_router = nullptr;
-int http_conn::m_server_id = 0;
-
 int setnonblocking(int fd)
 {
     int old_option = fcntl(fd, F_GETFL);
@@ -96,6 +91,8 @@ void http_conn::init(int sockfd, const sockaddr_in &addr)
 
 void http_conn::init()
 {
+    m_task_type = READ;
+
     m_check_state = CHECK_STATE_REQUESTLINE; // 初始状态为检查请求行
     m_linger = false;                        // 默认不保持链接  Connection : keep-alive保持连接
 
@@ -108,7 +105,6 @@ void http_conn::init()
     m_checked_idx = 0;
     m_read_idx = 0;
     m_write_idx = 0;
-    m_ticket_id = -1;
     bzero(m_read_buf, READ_BUFFER_SIZE);
     bzero(m_write_buf, WRITE_BUFFER_SIZE);
 }
@@ -406,6 +402,10 @@ bool http_conn::write()
                 unmap();
                 return false;
             }
+            else{
+                modfd( m_epollfd, m_sockfd, EPOLLOUT );
+                return true;
+            }
         }
         bytes_to_send -= temp;
         bytes_have_send += temp;
@@ -428,7 +428,7 @@ bool http_conn::write()
         if (bytes_to_send <= 0)
         {
             unmap();
-            if (m_linger)
+            if (true)
             {
                 init();
                 modfd(m_epollfd, m_sockfd, EPOLLIN);
@@ -549,38 +549,10 @@ bool http_conn::process_write(HTTP_CODE ret)
         }
     case GET_REQUEST:
         add_status_line(200, ok_200_title);
-        switch (m_request)
+        add_headers(strlen(m_content_buf));
+        if (!add_content(m_content_buf))
         {
-            char resp[100];
-        case DRAW_TICKET:
-            if (m_ticket_id == -1)
-            {
-                sprintf(resp, "%s (From Server No. %d)\n", invalid_staff_id, m_server_id);
-                add_headers(strlen(resp));
-                add_content(resp);
-            }
-            else if (m_ticket_id > 0)
-            {
-                sprintf(resp, "%s Your ticket number is %d \n(From Server No. %d)\n", ok_win_form, m_ticket_id, m_server_id);
-                add_headers(strlen(resp));
-                add_content(resp);
-            }
-            else if (m_ticket_id == 0)
-            {
-                char resp[100];
-                sprintf(resp, "%s (From Server No. %d)\n", ok_lose_form, m_server_id);
-                add_headers(strlen(resp));
-                add_content(resp);
-            }
-            break;
-        case FINISH:
-            sprintf(resp, "%s (From Server No. %d)\n", finish_raffle, m_server_id);
-            add_headers(strlen(resp));
-            if (!add_content(resp))
-            {
-                return false;
-            }
-            break;
+            return false;
         }
         break;
     case FILE_REQUEST:
@@ -604,30 +576,38 @@ bool http_conn::process_write(HTTP_CODE ret)
 // 由线程池中的工作线程调用，这是处理HTTP请求的入口函数
 void http_conn::process()
 {
+    switch (m_task_type)
+    {
+    case READ:
+    {
+        if (!read())
+        {
+            close_conn();
+            return;
+        }
+        // 解析HTTP请求
+        HTTP_CODE read_ret = process_read();
+        if (read_ret == NO_REQUEST)
+        {
+            modfd(m_epollfd, m_sockfd, EPOLLIN);
+            return;
+        }
 
-    if (!read())
-    {
-        close_conn();
-        return;
+        // 生成响应
+        bool write_ret = process_write(read_ret);
+        if (!write_ret)
+        {
+            close_conn();
+        }
+        modfd(m_epollfd, m_sockfd, EPOLLOUT);
+        m_task_type = WRITE;
+        break;
     }
-    // 解析HTTP请求
-    HTTP_CODE read_ret = process_read();
-    if (read_ret == NO_REQUEST)
-    {
-        modfd(m_epollfd, m_sockfd, EPOLLIN);
-        return;
-    }
-
-    // 生成响应
-    bool write_ret = process_write(read_ret);
-    if (!write_ret)
-    {
-        close_conn();
-    }
-    //modfd( m_epollfd, m_sockfd, EPOLLOUT);
-    if (!write())
-    {
-        close_conn();
+    case WRITE:
+        if (!write())
+        {
+            close_conn();
+        }
     }
 }
 

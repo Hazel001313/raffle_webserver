@@ -31,6 +31,13 @@ public:
     static const int FILENAME_LEN = 200;       // 文件名的最大长度
     static const int READ_BUFFER_SIZE = 2048;  // 读缓冲区的大小
     static const int WRITE_BUFFER_SIZE = 1024; // 写缓冲区的大小
+    static const int CONTENT_BUFFER_SIZE = 1024;  //报文内容缓冲区大小
+
+    enum TASK_TYPE
+    {
+        READ=0,
+        WRITE
+    };
 
     // HTTP请求方法，这里只支持GET
     enum METHOD
@@ -43,13 +50,6 @@ public:
         TRACE,
         OPTIONS,
         CONNECT
-    };
-
-    //请求的业务类型：抽奖、结束抽奖
-    enum REQUEST_CODE
-    {
-        DRAW_TICKET = 0,
-        FINISH
     };
 
     /*
@@ -139,9 +139,10 @@ public:
     static int m_epollfd;    // 所有socket上的事件都被注册到同一个epoll内核事件中，所以设置成静态的
     static int m_user_count; // 统计用户的数量
     static router *m_router;
-    static int m_server_id;
 
-public:
+private:
+    TASK_TYPE m_task_type; //线程任务是读或者写
+
     int m_sockfd; // 该HTTP连接的socket和对方的socket地址
     sockaddr_in m_address;
 
@@ -153,25 +154,28 @@ public:
     CHECK_STATE m_check_state; // 主状态机当前所处的状态
     METHOD m_method;           // 请求方法
 
-    char *m_url; // 客户请求的目标文件的文件名
+
     char *m_querys;
     char *m_version;      // HTTP协议版本号，我们仅支持HTTP1.1
     char *m_host;         // 主机名
     int m_content_length; // HTTP请求的消息总长度
     bool m_linger;        // HTTP请求是否要求保持连接
-    std::unordered_map<std::string, std::string> query_value;
+
 
     char m_write_buf[WRITE_BUFFER_SIZE]; // 写缓冲区
     int m_write_idx;                     // 写缓冲区中待发送的字节数
 
-    int m_ticket_id; //-1:不是合法id；否则中奖号
-    REQUEST_CODE m_request;
-
-    char *m_file_address;
-    struct stat m_file_stat;
     struct iovec m_iv[2];
     int m_iv_count;
     void unmap();
+
+public:
+    char *m_url; // 客户请求的目标文件的文件名
+    char *m_file_address;
+    struct stat m_file_stat;
+    std::unordered_map<std::string, std::string> query_value;
+    char m_content_buf[CONTENT_BUFFER_SIZE];
+
 };
 
 #endif

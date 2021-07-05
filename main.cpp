@@ -9,6 +9,11 @@
 #define CONN_COUNT 600
 const int MAX_FD = 65536;
 
+const char *ok_win_form = "Congratulation! You've got the ticket!";
+const char *ok_lose_form = "Sorry... But you can watch on line!\n";
+const char *invalid_staff_id = "Invalid id\n";
+const char *finish_raffle = "Finish!\n";
+
 int main(int argc, char *argv[])
 {
 
@@ -48,7 +53,7 @@ int main(int argc, char *argv[])
         exit(1);
     }
 
-    m_router->addRoute("/", [m_raffle](http_conn *http_connect) -> http_conn::HTTP_CODE
+    m_router->addRoute("/", [m_raffle, server_id](http_conn *http_connect) -> http_conn::HTTP_CODE
                        {
                            auto id = http_connect->query_value.find("id");
                            if (id == http_connect->query_value.end())
@@ -57,22 +62,29 @@ int main(int argc, char *argv[])
                            }
                            else if (!m_raffle->ismember(id->second))
                            {
-                               http_connect->m_ticket_id = -1;
+                               sprintf(http_connect->m_content_buf, "%s (From Server No. %d)\n", invalid_staff_id, server_id);
                            }
                            else
                            {
-                               http_connect->m_ticket_id = m_raffle->draw_ticket_(id->second);
+                               int ticket_id = m_raffle->draw_ticket_(id->second);
+                               if (ticket_id > 0)
+                               {
+                                   sprintf(http_connect->m_content_buf, "%s Your ticket number is %d \n(From Server No. %d)\n", ok_win_form, ticket_id, server_id);
+                               }
+                               if (ticket_id == 0)
+                               {
+                                   sprintf(http_connect->m_content_buf, "%s (From Server No. %d)\n", ok_lose_form, server_id);
+                               }
                            }
-                           http_connect->m_request = http_conn::REQUEST_CODE::DRAW_TICKET;
                            return http_conn::GET_REQUEST;
                        });
 
-    m_router->addRoute("/fin", [m_raffle](http_conn *http_connect) -> http_conn::HTTP_CODE
+    m_router->addRoute("/fin", [m_raffle, server_id](http_conn *http_connect) -> http_conn::HTTP_CODE
                        {
                            if (http_connect->query_value["passwd"] == "123")
                            {
                                m_raffle->finish();
-                               http_connect->m_request = http_conn::REQUEST_CODE::FINISH;
+                               sprintf(http_connect->m_content_buf, "%s (From Server No. %d)\n", finish_raffle, server_id);
                                return http_conn::GET_REQUEST;
                            }
                            else
@@ -109,7 +121,6 @@ int main(int argc, char *argv[])
                        });
 
     http_conn::m_router = m_router;
-    http_conn::m_server_id = server_id;
 
     m_raffleserver.init(port, ticket_number, m_http_conn, MAX_FD);
     m_raffleserver.eventloop();

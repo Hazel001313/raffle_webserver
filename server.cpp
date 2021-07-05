@@ -121,7 +121,7 @@ void server::eventloop()
 
                 http_conn_[sockfd].close_conn();
             }
-            else if (events_[i].events & EPOLLIN)
+            else if (events_[i].events & (EPOLLIN | EPOLLOUT))
             {
                 pool_->append(&http_conn_[sockfd]);
             }
