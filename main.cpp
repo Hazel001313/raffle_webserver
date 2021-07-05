@@ -38,7 +38,7 @@ int main(int argc, char *argv[])
 
     try
     {
-        m_conn_pool.init("9.135.13.170", 6379, CONN_COUNT);
+        m_conn_pool.init("127.0.0.1", 6379, CONN_COUNT);
         m_raffle = new raffle(m_conn_pool, "stafflist.csv", ticket_number, server_id);
         m_router = new router;
     }
