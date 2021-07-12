@@ -1,3 +1,17 @@
+## 更新日志
+
+实现线程池，redis连接与工作线程解耦  
+
+抽奖模块实现“部门间平均、部门内随机”  
+
+实现管理redis连接的RAII类conn_guard<REDIS>;  
+
+实现router类，管理url路径与处理函数handler之间的路由；  
+
+将添加route的代码与server框架代码分离，业务逻辑与框架分离；  
+
+增加获取文件的功能（需多次等待EPOLLOUT事件和write）；
+
 
 
 ## 概述
@@ -65,24 +79,6 @@ eg ./raffle_server -p7777 -r127.0.0.1 -t6379 -i1 -n40000
 ## 压力测试
 
 ![raffle_webserver/wrk.png at main · Hazel001313/raffle_webserver (github.com)](https://github.com/Hazel001313/raffle_webserver/blob/main/image/wrk.png)
-
-
-
-## 更新日志
-
-实现线程池，redis连接与工作线程解耦  
-
-抽奖模块实现“部门间平均、部门内随机”  
-
-实现管理redis连接的RAII类conn_guard<REDIS>;  
-
-实现router类，管理url路径与处理函数handler之间的路由；  
-
-将添加route的代码与server框架代码分离，业务逻辑与框架分离；  
-
-增加获取文件的功能（需多次等待EPOLLOUT事件和write）；
-
-
 
 
 
