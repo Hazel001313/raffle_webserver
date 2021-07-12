@@ -17,15 +17,48 @@ const char *finish_raffle = "Finish!\n";
 int main(int argc, char *argv[])
 {
 
-    if (argc <= 3)
+    int port = 7777;
+    std::string redis_ip="127.0.0.1";
+    int redis_port=6379;
+    int server_id=2;
+    int ticket_num=40000;
+
+    int opt;
+    const char *str = "p:r:t:i:n:";
+    while ((opt = getopt(argc, argv, str)) != -1)
     {
-        printf("usage: %s port_number ticket_number server_id\n", basename(argv[0]));
-        return 1;
+        switch (opt)
+        {
+        case 'p':
+        {
+            port = atoi(optarg);
+            break;
+        }
+        case 'r':
+        {
+            redis_ip = optarg;
+            break;
+        }
+        case 't':
+        {
+            redis_port = atoi(optarg);
+            break;
+        }
+        case 'i':
+        {
+            server_id = atoi(optarg);
+            break;
+        }
+        case 'n':
+        {
+            ticket_num = atoi(optarg);
+            break;
+        }
+        default:
+            break;
+        }
     }
 
-    int port = atoi(argv[1]);
-    int ticket_number = atoi(argv[2]);
-    int server_id = atoi(argv[3]);
 
     server &m_raffleserver = server::get_instance();
     conn_pool<Redis> &m_conn_pool = conn_pool<Redis>::get_instance();
@@ -38,8 +71,8 @@ int main(int argc, char *argv[])
 
     try
     {
-        m_conn_pool.init("127.0.0.1", 6379, CONN_COUNT);
-        m_raffle = new raffle(m_conn_pool, "stafflist.csv", ticket_number, server_id);
+        m_conn_pool.init(redis_ip, redis_port, CONN_COUNT);
+        m_raffle = new raffle(m_conn_pool, "stafflist.csv", ticket_num, server_id);
         m_router = new router;
     }
     catch (std::exception &ex)
@@ -122,7 +155,7 @@ int main(int argc, char *argv[])
 
     http_conn::m_router = m_router;
 
-    m_raffleserver.init(port, ticket_number, m_http_conn, MAX_FD);
+    m_raffleserver.init(port, ticket_num, m_http_conn, MAX_FD);
     m_raffleserver.eventloop();
 
     delete m_router;

@@ -120,6 +120,21 @@ int raffle::draw_ticket(const std::string id)
         return staff_info[id].ticketnum;
     int ticket_id = 0;
     std::string ticketpool = "d" + std::to_string(staff_info[id].department) + "_ticketpool";
+
+    // do{
+    //     redis_ptr->watch(id);
+    //     ticket_id = std::stoi(redis_ptr->hget(id, "ticket"));
+    //     if (ticket_id != 0)
+    //     {
+    //         redis_ptr->unwatch();
+    //         return ticket_id;
+    //     }
+    //     redis_ptr->multi();
+    //     ticket_id = std::stoi(redis_ptr->spop(ticketpool));
+    //     redis_ptr->hsetnx(id, "ticket", std::to_string(ticket_id));
+    // }while(!redis_ptr->exec());
+    // staff_info[id].ticketnum = ticket_id;
+
     while (ticket_id == 0)
     {
         ticket_id = std::stoi(redis_ptr->hget(id, "ticket"));
@@ -140,6 +155,7 @@ int raffle::draw_ticket(const std::string id)
     {
         staff_info[id].ticketnum = ticket_id;
     }
+
     return ticket_id;
 }
 

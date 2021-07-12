@@ -10,11 +10,17 @@
 
 
 
-## 运行
+## 运行说明
 
-./raffle_server 7777（端口号） 40000（门票数） 2（server编号）  
+| 配置项 | 说明                                          |
+| ------ | --------------------------------------------- |
+| p      | 监听端口，默认为7777                          |
+| r      | redis IP地址，默认为127.0.0.1                 |
+| t      | redis 端口地址，默认为6379                    |
+| i      | server id，默认为2（id为1的server预注册信息） |
+| n      | 奖票数量，默认为40000                         |
 
-
+eg ./raffle_server -p7777 -r127.0.0.1 -t6379 -i1 -n40000
 
 ## 接口
 
@@ -26,6 +32,32 @@
 
 ### demo  
 
+抽中：
+
+![](https://github.com/Hazel001313/raffle_webserver/blob/main/image/id11111.png)
+
+未抽中：
+
+![](https://github.com/Hazel001313/raffle_webserver/blob/main/image/id11112.png)
+
+无效ID：
+
+![](https://github.com/Hazel001313/raffle_webserver/blob/main/image/id111.png)
+
+结束抽奖-正确密码：
+
+![](https://github.com/Hazel001313/raffle_webserver/blob/main/image/fin123.png)
+
+结束抽奖-错误密码：
+
+![](https://github.com/Hazel001313/raffle_webserver/blob/main/image/fin12345.png)
+
+获取结束抽奖后生成的中奖名单：
+
+![](https://github.com/Hazel001313/raffle_webserver/blob/main/image/getwinnerlist.png)
+
+
+
 ![raffle_webserver/function.png at main · Hazel001313/raffle_webserver (github.com)](https://github.com/Hazel001313/raffle_webserver/blob/main/image/function.png)
 
 
@@ -33,6 +65,22 @@
 ## 压力测试
 
 ![raffle_webserver/wrk.png at main · Hazel001313/raffle_webserver (github.com)](https://github.com/Hazel001313/raffle_webserver/blob/main/image/wrk.png)
+
+
+
+## 更新日志
+
+实现线程池，redis连接与工作线程解耦  
+
+抽奖模块实现“部门间平均、部门内随机”  
+
+实现管理redis连接的RAII类conn_guard<REDIS>;  
+
+实现router类，管理url路径与处理函数handler之间的路由；  
+
+将添加route的代码与server框架代码分离，业务逻辑与框架分离；  
+
+增加获取文件的功能（需多次等待EPOLLOUT事件和write）；
 
 
 

@@ -22,6 +22,10 @@ public:
     bool hsetnx(const std::string key, const std::string field, const std::string value);
     std::string hget(const std::string key, const std::string field);
     std::string spop(const std::string key);
+    void multi();
+    bool exec();
+    void watch(const std::string key);
+    void unwatch();
 
 private:
     redisContext *redisconnect_;

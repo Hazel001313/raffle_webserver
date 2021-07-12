@@ -130,3 +130,31 @@ std::string Redis::spop(const std::string key)
     freeReplyObject(reply);
     return s;
 }
+
+void Redis::multi(){
+    redisReply *reply = (redisReply *)redisCommand(redisconnect_, "MULTI");
+    checkreturn(reply);
+    freeReplyObject(reply);
+    return;
+}
+bool Redis::exec(){
+    redisReply *reply = (redisReply *)redisCommand(redisconnect_, "EXEC");
+    checkreturn(reply);
+    bool ret=false;
+    if (reply->type != REDIS_REPLY_NIL)
+    ret=true;
+    freeReplyObject(reply);
+    return ret;
+}
+void Redis::watch(const std::string key){
+    redisReply *reply = (redisReply *)redisCommand(redisconnect_, "WATCH %s", key.c_str());
+    checkreturn(reply);
+    freeReplyObject(reply);
+    return;
+}
+void Redis::unwatch(){
+    redisReply *reply = (redisReply *)redisCommand(redisconnect_, "UNWATCH");
+    checkreturn(reply);
+    freeReplyObject(reply);
+    return;
+}
